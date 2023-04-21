@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"net/http"
 )
@@ -15,6 +15,7 @@ func getOpenBook(book *Book) {
 	}
 
 	url := fmt.Sprintf("https://openlibrary.org/isbn/%s.json", book.ISBN)
+	fmt.Println(url)
 	var openBook OpenBook
 	//get the data from the url
 	resp, err := http.Get(url)
@@ -23,72 +24,39 @@ func getOpenBook(book *Book) {
 	}
 	defer resp.Body.Close()
 	//read the data from the url
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	//unmarshall the data
 	err = json.Unmarshal(body, &openBook)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	//set relevant values in book
 	book.Pages = openBook.NumberOfPages
+	book.Cover = formatCoverLink(book.ISBN, "M")
 
 }
 
-func formatCoverLink(coverId, size string) string {
-	if coverId == "" {
+func formatCoverLink(isbn, size string) string {
+	if isbn == "" {
 		return ""
 	}
 	if size == "" {
 		size = "M"
 	}
-	return fmt.Sprintf("https://covers.openlibrary.org/b/id/%s-%s.jpg", coverId, size)
+	return fmt.Sprintf("https://covers.openlibrary.org/b/isbn/%s-%s.jpg", isbn, size)
 }
 
 type OpenBook struct {
-	Identifiers struct {
-		Goodreads    []string `json:"goodreads"`
-		Librarything []string `json:"librarything"`
-		Amazon       []string `json:"amazon"`
-	} `json:"identifiers"`
 	Title   string `json:"title"`
 	Authors []struct {
 		Key string `json:"key"`
 	} `json:"authors"`
-	PublishDate   string   `json:"publish_date"`
-	Publishers    []string `json:"publishers"`
-	Isbn10        []string `json:"isbn_10"`
-	Covers        []int    `json:"covers"`
-	Ocaid         string   `json:"ocaid"`
-	Contributions []string `json:"contributions"`
-	Languages     []struct {
-		Key string `json:"key"`
-	} `json:"languages"`
-	SourceRecords []string `json:"source_records"`
 	Isbn13        []string `json:"isbn_13"`
-	LocalID       []string `json:"local_id"`
-	Type          struct {
-		Key string `json:"key"`
-	} `json:"type"`
-	FirstSentence struct {
-		Type  string `json:"type"`
-		Value string `json:"value"`
-	} `json:"first_sentence"`
-	Key           string `json:"key"`
-	NumberOfPages int    `json:"number_of_pages"`
-	Works         []struct {
-		Key string `json:"key"`
-	} `json:"works"`
-	LatestRevision int `json:"latest_revision"`
-	Revision       int `json:"revision"`
-	Created        struct {
-		Type  string `json:"type"`
-		Value string `json:"value"`
-	} `json:"created"`
-	LastModified struct {
-		Type  string `json:"type"`
-		Value string `json:"value"`
-	} `json:"last_modified"`
+	FirstSentence string   `json:"first_sentence,omitempty"`
+	NumberOfPages int      `json:"number_of_pages"`
 }

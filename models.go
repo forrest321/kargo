@@ -9,7 +9,6 @@ type Book struct {
 	Author      string `json:"author" binding:"required"`
 	Status      string `json:"status"`
 	Cover       string `json:"cover"`
-	Thumbnail   string `json:"thumbnail"`
 	Pages       int    `json:"pages"`
 	CurrentPage int    `json:"current_page"`
 }
