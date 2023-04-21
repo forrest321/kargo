@@ -11,9 +11,14 @@ import (
 )
 
 var db *gorm.DB
+var statusValues map[string]bool
+var sortProps map[string]bool
 
 func main() {
 	setupDb()
+
+	statusValues = map[string]bool{"Unread": true, "In Progress": true, "Finished": true}
+	sortProps = map[string]bool{"title": true, "isbn": true, "author": true}
 
 	// Set up Gin router
 	router := gin.Default()
@@ -31,6 +36,11 @@ func main() {
 	router.Run(":8080")
 }
 
+//TODO: try to get all books into Pantry in an easier manner
+//TODO: change to json / better routes?
+//TODO: documentation
+//TODO: better handling of errors
+
 // Set up SQLite database
 func setupDb() {
 	var err error
@@ -44,7 +54,19 @@ func setupDb() {
 // Get all books
 func getBooks(c *gin.Context) {
 	var books []Book
-	db.Find(&books)
+
+	sort := c.Query("sort")
+	if !sortProps[sort] {
+		sort = "title"
+	}
+
+	direction := c.Query("direction")
+	if direction == "" && direction != "asc" && direction != "desc" {
+		direction = "asc"
+	}
+
+	sortBy := fmt.Sprintf("%s %s", sort, direction)
+	db.Order(sortBy).Find(&books)
 	c.JSON(http.StatusOK, books)
 }
 
@@ -98,8 +120,11 @@ func updateBook(c *gin.Context) {
 		book.ISBN = newBookDetails.ISBN
 	}
 
+	if statusValues[newBookDetails.Status] {
+		book.Status = newBookDetails.Status
+	}
+
 	book.CurrentPage = newBookDetails.CurrentPage
-	book.Status = newBookDetails.Status
 
 	getOpenBook(&book)
 	db.Save(&book)
